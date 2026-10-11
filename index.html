@@ -1,0 +1,803 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Qui a bu mon verre ?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* Layout: le comptoir vu de face — les habitués en rangées avec leur verre, Youky et son plateau en bas, gros bouton d'action dessous */
+[hidden]{display:none!important}
+:root{
+  --night:#0d0b0a; --panel:#1a1614; --paper:#f4ecd8; --ink-dark:#2a201a; --pastis:#ffd23f; --orange:#f27a1a; --pink:#ff4fa3; --red:#e8453c; --ink:#f1ebe4; --muted:#9d948b;
+  --display:"Press Start 2P", ui-monospace, "Courier New", monospace;
+  --text:"VT323", ui-monospace, "Courier New", monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:radial-gradient(ellipse 80% 60% at 50% 0%, #3a2410 0%, var(--night) 70%); background-color:var(--night); color:var(--ink);
+  font-family:var(--text); font-size:20px; overflow:hidden; touch-action:none; -webkit-user-select:none; user-select:none}
+#app{height:100%; box-sizing:border-box; padding-block:8px; padding-inline:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px}
+#bar{display:flex; align-items:center; justify-content:space-between; gap:8px; max-width:100%}
+#bar .brand{font-family:var(--display); font-size:10px; color:var(--pastis); text-shadow:0 0 8px rgba(255,210,63,.6); white-space:nowrap}
+#bar .tools{display:flex; gap:6px}
+.tbtn{font-family:var(--display); font-size:9px; color:var(--ink); background:var(--panel); border:2px solid #3a302a; border-radius:4px; padding:7px 9px; cursor:pointer; white-space:nowrap}
+.tbtn[aria-pressed="true"]{color:var(--muted)}
+#stage{position:relative; border:3px solid var(--orange); border-radius:6px; box-shadow:0 0 18px rgba(242,122,26,.35); background:var(--night); max-width:100%}
+#game{display:block; image-rendering:pixelated; image-rendering:crisp-edges; cursor:pointer}
+#act{flex:none; width:min(100%, 380px); height:58px; border:0; border-radius:12px; font-family:var(--display); font-size:13px; letter-spacing:1px; color:#1a1200; background:var(--pastis); box-shadow:0 5px 0 #b88a00; cursor:pointer}
+#act:active{transform:translateY(4px); box-shadow:0 1px 0 #b88a00}
+#act:disabled{background:#3a302a; color:var(--muted); box-shadow:0 5px 0 #241d19; cursor:default}
+#chips{display:flex; flex-wrap:wrap; gap:5px; justify-content:center; max-width:min(100%, 440px)}
+.chip{display:flex; align-items:center; gap:5px; padding:3px 8px; border-radius:20px; background:var(--panel); border:2px solid var(--c); font-size:17px; line-height:1}
+.chip.now{background:var(--c); color:#1a1200}
+#overlay{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(10,8,7,.9); overflow:auto; padding:10px; box-sizing:border-box; cursor:default}
+.card{width:100%; max-width:400px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; margin:auto}
+.duo{display:flex; gap:12px; align-items:end}
+.duo canvas{width:60px; height:70px; image-rendering:pixelated}
+.eyebrow{font-family:var(--display); font-size:8px; color:var(--orange); letter-spacing:1.5px; margin:0; text-transform:uppercase}
+h1{font-family:var(--display); font-size:18px; line-height:1.35; margin:0; color:var(--pastis); text-shadow:0 0 6px rgba(255,210,63,.8), 0 0 22px rgba(255,210,63,.4); text-wrap:balance}
+#sub{margin:0; font-size:20px; line-height:1.1; max-width:36ch}
+.modesel{display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-width:340px}
+.modesel button{font-family:var(--display); font-size:9px; padding:12px 4px; border-radius:4px; border:2px solid #5a4a2a; background:var(--panel); color:var(--ink); cursor:pointer}
+.modesel button[aria-pressed="true"]{background:var(--orange); color:#1a1200; border-color:var(--orange)}
+#multiset{display:flex; flex-direction:column; gap:8px; align-items:center; width:100%; max-width:340px}
+#plist{display:grid; grid-template-columns:1fr 1fr; gap:6px; width:100%}
+#plist div{display:flex; gap:4px; min-width:0}
+#plist input{flex:1; min-width:0; font-family:var(--text); font-size:19px; padding:5px 7px; border-radius:4px; border:2px solid #3a302a; background:var(--paper); color:var(--ink-dark)}
+#plist button{font-family:var(--display); font-size:8px; width:28px; border-radius:4px; border:2px solid #3a302a; background:var(--panel); color:var(--ink); cursor:pointer}
+.row{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center}
+.small{font-family:var(--display); font-size:8px; padding:8px 10px; border-radius:4px; border:2px solid #3a302a; background:var(--panel); color:var(--ink); cursor:pointer}
+.opt{display:flex; align-items:center; gap:8px; font-size:18px; cursor:pointer}
+.opt input{width:20px; height:20px; accent-color:var(--orange)}
+.rules{margin:0; padding:0; list-style:none; display:grid; gap:4px; font-size:18px; line-height:1.05; text-align:left; max-width:340px}
+.rules b{font-family:var(--display); font-size:8px; color:var(--pastis); font-weight:400; margin-right:6px}
+.stats{display:flex; gap:16px; flex-wrap:wrap; justify-content:center; font-family:var(--display); font-size:8px; color:var(--muted)}
+.stats strong{display:block; margin-top:5px; color:var(--ink); font-size:12px; font-weight:400}
+.palm{width:100%; max-width:340px; background:var(--paper); color:var(--ink-dark); border-radius:3px; padding:8px 12px; box-shadow:0 3px 0 #b9a888; text-align:left; box-sizing:border-box}
+.palm h2{font-family:var(--display); font-size:8px; color:#c0392b; margin:0 0 6px; text-align:center}
+.palm ol{margin:0; padding:0; list-style:none; display:grid; gap:2px; font-size:19px; line-height:1}
+.palm li{display:flex; justify-content:space-between; gap:8px}
+.palm li span:last-child{color:#7a5a3a; white-space:nowrap; font-variant-numeric:tabular-nums}
+.palm .recs{margin-top:6px; font-size:17px; color:#7a5a3a; line-height:1.05}
+.hint{margin:0; font-size:17px; color:var(--muted); line-height:1.15}
+#start{font-family:var(--display); font-size:13px; text-transform:uppercase; color:#1a1200; background:var(--pastis); border:0; border-radius:4px; padding:13px 22px; cursor:pointer; box-shadow:0 4px 0 #b88a00}
+button:focus-visible,input:focus-visible{outline:2px solid var(--pink); outline-offset:2px}
+
+/* ===== confort mobile : pas de zoom, menus plein écran et lisibles ===== */
+*{-webkit-touch-callout:none; -webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{overscroll-behavior:none}
+#game{touch-action:none}
+button,label,input,select{touch-action:pan-x pan-y}
+#overlay{position:fixed !important; inset:0; z-index:10; background-color:rgba(10,8,7,.95) !important;
+  padding:16px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left)) !important}
+#overlay > .card{margin:auto}
+#bar{min-width:0}
+#bar .brand{min-width:0; overflow:hidden; text-overflow:ellipsis}
+#bar .tools,#bar .row{flex:none}
+@media (pointer:coarse){
+  #overlay .eyebrow{font-size:9px}
+  #overlay .rules b,#overlay .legend b,#overlay .keys dt,.palm h2,.menu .menu-title{font-size:9px}
+  #overlay .rules,#overlay .legend li,#overlay .keys{font-size:19px}
+  #overlay .stats{font-size:9px}
+  #overlay .hint{font-size:18px}
+  #overlay #sub{font-size:21px}
+  .tbtn{padding:9px 9px}
+}
+
+/* ===== ce jeu se joue en portrait ===== */
+#mk-rot{display:none}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:560px){
+  html:not(.mk-forced) #mk-rot{display:flex}
+}
+#mk-rot{position:fixed; inset:0; z-index:15; background:rgba(10,8,7,.97); align-items:center; justify-content:center; text-align:center;
+  color:#f1ebe4; font-family:"VT323", ui-monospace, monospace; font-size:22px; padding:16px; box-sizing:border-box}
+#mk-rot .mk-phone{font-size:46px; display:inline-block; animation:mkturn 2s ease-in-out infinite}
+@keyframes mkturn{0%,25%{transform:rotate(-90deg)}55%,100%{transform:rotate(0)}}
+@media (prefers-reduced-motion:reduce){#mk-rot .mk-phone{animation:none}}
+#mk-rot b{display:block; font-family:"Press Start 2P", ui-monospace, monospace; font-size:12px; font-weight:400; color:#ffd23f; margin:12px 0 8px; line-height:1.5}
+#mk-rot p{margin:0 0 14px; color:#c9c0b6}
+#mk-rot button{font-family:"Press Start 2P", ui-monospace, monospace; font-size:9px; color:#f1ebe4; background:#1a1614; border:2px solid #3a302a; border-radius:4px; padding:10px 12px; cursor:pointer}
+</style>
+
+<div id="app">
+  <div id="bar">
+    <span class="brand">QUI A BU MON VERRE ?</span>
+    <div class="tools">
+      <button class="tbtn" id="endbtn" type="button" hidden>FIN</button>
+      <button class="tbtn" id="mute" type="button" aria-pressed="false">♪ SON</button>
+    </div>
+  </div>
+  <div id="stage">
+    <canvas id="game" width="448" height="600" aria-label="Le comptoir : les habitués et leurs verres"></canvas>
+    <div id="overlay">
+      <div class="card">
+        <div class="duo"><canvas id="c-hero" width="24" height="28"></canvas><canvas id="c-boss" width="24" height="28"></canvas></div>
+        <p class="eyebrow" id="eyebrow">Le comptoir de Youky</p>
+        <h1 id="title">QUI A BU MON VERRE ?</h1>
+        <p id="sub">Youky sert la tournée : un verre pour chaque habitué, et son pastis pour lui. Retiens bien qui boit quoi… Ensuite il ramasse tout, et il faut rendre à chacun son verre. Attention : parfois la Grosse Bouteille d'eau en boit un en douce !</p>
+        <div class="stats" id="stats" hidden></div>
+        <div class="modesel" role="group" aria-label="Mode de jeu">
+          <button type="button" id="m-solo" aria-pressed="true">SOLO</button>
+          <button type="button" id="m-multi" aria-pressed="false">À PLUSIEURS</button>
+        </div>
+        <div id="multiset" hidden>
+          <div id="plist"></div>
+          <div class="row">
+            <button type="button" class="small" id="addp">+ JOUEUR</button>
+            <label class="opt"><input type="checkbox" id="gage"> Gages sans alcool</label>
+          </div>
+        </div>
+        <button id="start" type="button">Ouvrir le comptoir</button>
+        <ul class="rules" id="rules">
+          <li><b>RETIENS</b>la boisson, les glaçons et la paille de chacun</li>
+          <li><b>RENDS</b>touche un verre du plateau, puis la personne</li>
+          <li><b>QUI A BU ?</b>quand la Bouteille boit un verre, trouve qui l'a perdu</li>
+        </ul>
+        <p class="hint" id="hint">Solo : 3 erreurs et le comptoir ferme. Chaque tournée ajoute un habitué.</p>
+        <div class="palm" id="palm"></div>
+      </div>
+    </div>
+  </div>
+  <button id="act" type="button" disabled>J'AI RETENU !</button>
+  <div id="chips" hidden></div>
+</div>
+
+<div id="mk-rot" role="dialog" aria-label="Orientation conseillée"><div><span class="mk-phone" aria-hidden="true">📱</span><b>CE JEU SE JOUE EN PORTRAIT</b><p>Tourne ton téléphone à la verticale, c'est bien plus confortable.</p><button type="button" id="mk-rot-go">Jouer quand même</button></div></div>
+<script>
+/* ===== kit mobile commun : anti-zoom, mise à l'échelle, commandes par pouce ===== */
+(function () {
+  var vp = document.querySelector('meta[name=viewport]');
+  if (!vp) { vp = document.createElement('meta'); vp.name = 'viewport'; document.head.appendChild(vp); }
+  vp.content = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+  var stop = function (e) { e.preventDefault(); };
+  ['gesturestart', 'gesturechange', 'gestureend', 'dblclick'].forEach(function (t) { document.addEventListener(t, stop, {passive:false}); });
+  document.addEventListener('touchmove', function (e) { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, {passive:false});
+  var lastEnd = 0;
+  document.addEventListener('touchend', function (e) {
+    var now = Date.now(), t = e.target;
+    var interactive = t && t.closest && t.closest('button,input,label,select,textarea,a');
+    if (!interactive && now - lastEnd < 350) e.preventDefault();
+    lastEnd = now;
+  }, {passive:false});
+  document.addEventListener('contextmenu', function (e) { if (!(e.target.closest && e.target.closest('#overlay,input,textarea'))) e.preventDefault(); });
+  var go = document.getElementById('mk-rot-go');
+  if (go) go.addEventListener('click', function () { document.documentElement.classList.add('mk-forced'); window.dispatchEvent(new Event('resize')); });
+
+  // regroupe les boutons tactiles : un bloc à gauche, un bloc à droite
+  window.mkPads = function (contId, L, R, flat) {
+    var c = document.getElementById(contId); if (!c) return;
+    var l = document.createElement('div'), r = document.createElement('div');
+    l.className = 'mkL' + (flat ? ' flat' : ''); r.className = 'mkR';
+    L.forEach(function (id) { var b = document.getElementById(id); if (b) l.appendChild(b); });
+    R.forEach(function (id) { var b = document.getElementById(id); if (b) r.appendChild(b); });
+    c.appendChild(l); if (R.length) c.appendChild(r); else c.classList.add('noR');
+    c.classList.add('mk');
+  };
+
+  // le jeu prend toute la place disponible, en portrait comme en paysage
+  window.mkFit = function (canvas, W, H) {
+    var app = document.getElementById('app'), stage = document.getElementById('stage'), bar = document.getElementById('bar');
+    var vw = document.documentElement.clientWidth;
+    var vh = window.visualViewport ? Math.min(window.visualViewport.height, window.innerHeight) : window.innerHeight;
+    var cs = getComputedStyle(app);
+    var px = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), py = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    var gr = parseFloat(cs.rowGap) || 0, gc = parseFloat(cs.columnGap) || 0;
+    var border = 6, aw, ah;
+    var side = cs.display === 'grid' && app.querySelector('.mkL');
+    if (side) {
+      var L = app.querySelector('.mkL'), R = app.querySelector('.mkR');
+      aw = vw - px - (L ? L.offsetWidth : 0) - (R ? R.offsetWidth : 0) - 2 * gc - border;
+      ah = vh - py - bar.offsetHeight - gr - border;
+      bar.style.width = '';
+    } else {
+      var other = 0, n = 0;
+      Array.prototype.forEach.call(app.children, function (el) {
+        if (el === stage || el.hidden) return;
+        var d = getComputedStyle(el); if (d.display === 'none' || d.position === 'fixed' || d.position === 'absolute') return;
+        other += el.offsetHeight; n++;
+      });
+      aw = vw - px - border; ah = vh - py - other - n * gr - border;
+    }
+    var s = Math.min(aw / W, ah / H);
+    if (s > 1) s = Math.floor(s * 4) / 4;
+    s = Math.max(0.3, s);
+    canvas.style.width = Math.floor(W * s) + 'px'; canvas.style.height = Math.floor(H * s) + 'px';
+    if (!side) bar.style.width = (Math.floor(W * s) + border) + 'px';
+  };
+})();
+</script>
+<script>
+(() => {
+'use strict';
+const W = 448, H = 600;
+const $ = id => document.getElementById(id);
+const rand = (a, b) => a + Math.random() * (b - a);
+const ri = n => Math.floor(Math.random() * n);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = ri(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const PCOLS = ['#f27a1a', '#2f8fd6', '#4cc06a', '#ff4fa3', '#ffd23f', '#a06ae0', '#e8453c', '#33d1e0'];
+const GAGES = ['Chante un refrain', 'Imite le patron du bar', 'Un verre d\'eau cul sec', 'Fais un compliment à chacun', 'Raconte une blague', 'Parle avec l\'accent du Sud jusqu\'à ton prochain tour', 'Mime une partie de pétanque', 'Sers à boire à tout le monde', 'Fais la cigale pendant 10 secondes', 'Danse 10 secondes'];
+const SMALL = '8px "Press Start 2P", monospace', MID = '11px "Press Start 2P", monospace', TXT = '20px VT323, monospace', NAME = '17px VT323, monospace';
+
+/* ---------- son ---------- */
+let actx = null, master = null, nbuf = null, muted = false;
+try { muted = localStorage.getItem('pastisman-muted') === '1'; } catch (e) {}
+function initAudio() {
+  if (!actx) {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    actx = new AC(); master = actx.createGain(); master.gain.value = muted ? 0 : 0.5; master.connect(actx.destination);
+    nbuf = actx.createBuffer(1, actx.sampleRate, actx.sampleRate); const d = nbuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  if (actx.state === 'suspended') actx.resume();
+}
+function tone(f, dur, o = {}) {
+  if (!actx || muted) return;
+  const t0 = actx.currentTime + (o.delay || 0), osc = actx.createOscillator(), g = actx.createGain();
+  osc.type = o.type || 'square'; osc.frequency.setValueAtTime(f, t0); if (o.slideTo) osc.frequency.exponentialRampToValueAtTime(o.slideTo, t0 + dur);
+  const v = o.vol || 0.1; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g).connect(master); osc.start(t0); osc.stop(t0 + dur + 0.03);
+}
+function noise(dur, o = {}) {
+  if (!actx || muted) return;
+  const t0 = actx.currentTime + (o.delay || 0), src = actx.createBufferSource(); src.buffer = nbuf;
+  const f = actx.createBiquadFilter(); f.type = o.filter || 'bandpass'; f.frequency.value = o.freq || 2000; f.Q.value = o.q || 1;
+  const g = actx.createGain(); g.gain.setValueAtTime(o.vol || 0.1, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(f).connect(g).connect(master); src.start(t0, Math.random() * 0.5); src.stop(t0 + dur + 0.05);
+}
+const arp = (n, gap, o = {}) => n.forEach((f, i) => tone(f, gap * 1.6, {...o, delay:(o.delay || 0) + i * gap}));
+const SFX = {
+  clink: () => { tone(2700 + rand(-200, 200), 0.09, {type:'sine', vol:0.12}); tone(4000, 0.05, {type:'sine', vol:0.05, delay:0.02}); noise(0.08, {freq:1500, vol:0.04, q:0.7}); },
+  pick: () => tone(1300, 0.05, {type:'triangle', vol:0.1}),
+  put: () => { tone(2300, 0.07, {type:'sine', vol:0.12}); },
+  tick: () => tone(1700, 0.03, {vol:0.03}),
+  glou: () => { for (let i = 0; i < 7; i++) { const b = 240 + Math.random() * 160; tone(b, 0.08, {type:'sine', vol:0.22, slideTo:b * 2.4, delay:i * 0.08}); } },
+  dark: () => { tone(400, 0.5, {type:'triangle', vol:0.1, slideTo:120}); noise(0.4, {freq:600, vol:0.08, filter:'lowpass'}); },
+  laugh: () => arp([660, 587, 523, 466, 440], 0.09, {vol:0.06}),
+  good: () => arp([523, 659, 784, 1047, 1319], 0.08, {vol:0.06}),
+  bad: () => { tone(150, 0.45, {vol:0.09}); tone(110, 0.45, {vol:0.07, delay:0.05}); },
+  serve: () => arp([392, 523, 659, 784], 0.1, {vol:0.06}),
+  over: () => arp([523, 466, 415, 392, 311], 0.22, {type:'triangle', vol:0.15})
+};
+
+/* ---------- personnages ---------- */
+const HERO = [
+"........KKKKKKKK........","......hKKqKKKKqKKh......",".....hhKqKKKqKKqKhh.....","....hhKKKKKKKKKKKKhh....",
+"...hhKKKKKKKKKKKKKKhh...","...hgKKKKKKKKKKKKKKgh...","...hKKKKKKKKKKKKKKKKh...","...hKbbbbKKKKKKbbbbKh...",
+"..FFFFFFFFFFFFFFFFFFFF..",".kFllllllllFFllllllllFk.",".kFllllllllFFllllllllFk.",".kFllllllllFFllllllllFk.",
+"..FFFFFFFFFKKFFFFFFFFF..","...KKKKKKKKkkKKKKKKKK...","...KrrKKKKkkkkKKKKrrK...","...BKKKbbbbbbbbbbKKKB...",
+"...BBbBbBBBBBBBBbBbBB...","...BbBBbBBbbbbBBbBBbB...","....BbBbBBbBBbBBbBbB....",".....BBbBbBBbbBbBbB.....",
+".......BbBBbbBBbB.......",".........kkkkkk.........","......TTTkkkkkkTTT......","...TTTTTTTkkkkTTTTTTT...",
+".TTTTTTTTTTTTTTTTTTTTTT.","TTTTTTTTTTTTTTTTTTTTTTTT","TTTtTTTTTTTTTTTTTTTTtTTT","TTTtTTTTTTTTTTTTTTTTtTTT"];
+const FACE = [
+"........................","........................",".......hhhhhhhhhh.......",".....hhhhhhhhhhhhhh.....",
+"....hhKKKKKKKKKKKKhh....","...hhKKKKKKKKKKKKKKhh...","...hKKKKKKKKKKKKKKKKh...","...hKKKKKKKKKKKKKKKKh...",
+"...KKbbbKKKKKKKKbbbKK...","...KKKKKKKKKKKKKKKKKK...","..kKKKKKKKKKKKKKKKKKKk..","..kKKKKKKKKKKKKKKKKKKk..",
+"...KKKKKKKKkkKKKKKKKK...","...KrrKKKKkkkkKKKKrrK...","...KKKKKKKKKKKKKKKKKK...","...KKKKKKKKKKKKKKKKKK...",
+"....KKKKKKKKKKKKKKKK....","....KKKKKKKKKKKKKKKK....",".....KKKKKKKKKKKKKK.....",".......KKKKKKKKKK.......",
+".........kkkkkk.........",".........kkkkkk.........","......SSSkkkkkkSSS......","...SSSSSSSkkkkSSSSSSS...",
+".SSSSSSSSSSSSSSSSSSSSSS.","SSSSSSSSSSSSSSSSSSSSSSSS","SSSsSSSSSSSSSSSSSSSSsSSS","SSSsSSSSSSSSSSSSSSSSsSSS"];
+const BASECOL = {K:'#e7b292', k:'#c98d6e', r:'#de8f7c', q:'#c4a18b', h:'#4a433d', g:'#6f6861', b:'#3e3833', B:'#7c766f',
+  F:'#2c2e33', l:'#dcc3b3', e:'#2a2420', w:'#ffffff', m:'#7a3a34', W:'#fbf6ee', T:'#f27a1a', t:'#c95e0d'};
+const rowFill = (set, r, c0, c1, ch) => { for (let c = c0; c <= c1; c++) set(c, r, ch); };
+const CAST = [
+  {name:'Marcel', col:{S:'#2f6fb5', s:'#21437a', h:'#9a948c', H:'#1b1b22', G:'#d9d2c8'},
+   deco:set => { for (let r = 0; r < 4; r++) rowFill(set, r, 4, 19, 'H'); set(11, 0, '.'); set(12, 0, '.'); set(11, -1, 'H'); rowFill(set, 15, 7, 16, 'G'); set(6, 16, 'G'); set(17, 16, 'G'); }},
+  {name:'Ginette', col:{S:'#8a4ab5', s:'#5f3380', h:'#c0392b', m:'#c0304a'},
+   deco:set => { for (const [c, r] of [[3, 7], [3, 9], [20, 7], [20, 9], [2, 8], [21, 8], [3, 11], [20, 11], [2, 10], [21, 10], [3, 13], [20, 13]]) set(c, r, 'h'); }},
+  {name:'Le Facteur', col:{S:'#2f5fa8', s:'#21437a', h:'#5a3a22', H:'#1d3f7a', Y:'#ffd23f'},
+   deco:set => { for (let r = 0; r < 4; r++) rowFill(set, r, 5, 18, 'H'); rowFill(set, 4, 4, 21, 'H'); rowFill(set, 3, 5, 18, 'Y'); }},
+  {name:'Mamie Lulu', col:{S:'#e05a9a', s:'#b23f78', h:'#e6e6e6', F:'#c9a26b', l:'#f3e6d8', K:'#f0c39e'},
+   deco:set => { rowFill(set, 0, 9, 14, 'h'); rowFill(set, 1, 8, 15, 'h'); rowFill(set, 9, 4, 10, 'F'); rowFill(set, 9, 13, 19, 'F'); set(4, 10, 'F'); set(10, 10, 'F'); set(13, 10, 'F'); set(19, 10, 'F'); rowFill(set, 11, 4, 10, 'F'); rowFill(set, 11, 13, 19, 'F'); for (const c of [5, 6, 8, 9, 14, 15, 17, 18]) set(c, 10, 'l'); }},
+  {name:'Dédé', col:{S:'#f4f4f0', s:'#c9c9c0', h:'#2a2a2a', H:'#2f3a2a', K:'#d99a73'},
+   deco:set => { for (let r = 1; r < 4; r++) rowFill(set, r, 4, 19, 'H'); rowFill(set, 4, 4, 23, 'H'); rowFill(set, 15, 7, 16, 'b'); for (const r of [22, 23]) { set(9, r, 'K'); set(14, r, 'K'); } }},
+  {name:'Le Maire', col:{S:'#3a3a44', s:'#26262e', h:'#e3e3e3', G:'#e3e3e3', R:'#e8453c', U:'#2f5fa8', V:'#ffffff'},
+   deco:set => { rowFill(set, 15, 7, 16, 'G'); set(6, 16, 'G'); set(17, 16, 'G'); for (let i = 0; i < 5; i++) { set(5 + i * 3, 23 + i, 'U'); set(6 + i * 3, 23 + i, 'V'); set(7 + i * 3, 23 + i, 'R'); } }},
+  {name:'Jojo', col:{S:'#3c8a4a', s:'#2a6636', h:'#e0b040', K:'#efc09a'},
+   deco:set => { rowFill(set, 1, 8, 15, 'h'); set(7, 2, 'h'); set(16, 2, 'h'); set(4, 5, 'h'); set(19, 5, 'h'); }},
+  {name:'Paulette', col:{S:'#e0a020', s:'#b07a10', h:'#1e1a1a', K:'#c98d6e', k:'#a8704f', Z:'#ffd23f'},
+   deco:set => { for (let r = 4; r <= 15; r++) { set(2, r, 'h'); set(3, r, 'h'); set(20, r, 'h'); set(21, r, 'h'); } rowFill(set, 4, 4, 19, 'h'); set(2, 16, 'Z'); set(21, 16, 'Z'); }}
+];
+const sprCache = new Map();
+function mouth(set, mood, heroish) {
+  if (mood === 'grin') { for (let c = 8; c <= 15; c++) set(c, 16, 'W'); for (let c = 9; c <= 14; c++) set(c, 17, 'm'); }
+  else if (mood === 'o') { set(11, 16, 'm'); set(12, 16, 'm'); set(11, 17, 'm'); set(12, 17, 'm'); }
+  else if (mood === 'meh') { for (let c = 9; c <= 14; c++) set(c, 16, 'm'); set(8, 17, 'm'); set(15, 17, 'm'); }
+  else { for (let c = 9; c <= 14; c++) set(c, 16, 'm'); set(8, 15, 'm'); set(15, 15, 'm'); }
+}
+function bust(who, mood) {
+  const key = (who === 'hero' ? 'hero' : who.name) + mood;
+  if (sprCache.has(key)) return sprCache.get(key);
+  const isHero = who === 'hero';
+  const R = (isHero ? HERO : FACE).map(r => r.split(''));
+  const set = (c, r, ch) => { if (R[r] && c >= 0 && c < 24) R[r][c] = ch; };
+  const col = isHero ? BASECOL : {...BASECOL, ...who.col};
+  if (isHero) {
+    set(5, 10, 'e'); set(6, 10, 'e'); set(15, 10, 'e'); set(16, 10, 'e'); set(3, 11, 'w'); set(13, 11, 'w');
+    mouth(set, mood);
+    if (mood === 'o' || mood === 'grin') for (const c of [5, 6, 7, 8, 15, 16, 17, 18]) { set(c, 7, 'K'); set(c, 6, 'b'); }
+    if (mood === 'meh') { set(5, 7, 'K'); set(18, 7, 'K'); set(5, 8, 'F'); set(18, 8, 'F'); }
+  } else {
+    set(6, 10, 'e'); set(7, 10, 'e'); set(16, 10, 'e'); set(17, 10, 'e');
+    mouth(set, mood);
+    if (mood === 'meh') { set(5, 8, 'b'); set(8, 7, 'b'); set(18, 8, 'b'); set(15, 7, 'b'); }
+    who.deco(set);
+  }
+  const cv = document.createElement('canvas'); cv.width = 24; cv.height = 28; const g = cv.getContext('2d');
+  R.forEach((row, r) => row.forEach((ch, c) => { if (ch !== '.' && col[ch]) { g.fillStyle = col[ch]; g.fillRect(c, r, 1, 1); } }));
+  sprCache.set(key, cv); return cv;
+}
+function drawBottle(g, x, y, s, mood) {
+  // la Grosse Bouteille d'eau, 24 x 32 unités, (x, y) = haut-gauche
+  const P = (c, r, w, h, k) => { g.fillStyle = k; g.fillRect(Math.round(x + c * s), Math.round(y + r * s), Math.ceil(w * s), Math.ceil(h * s)); };
+  const body = '#c4e7f8', lab = '#1a8fd6';
+  P(9, 0, 6, 3, lab); P(9, 3, 6, 2, body); P(7, 5, 10, 2, body); P(4, 7, 16, 2, body); P(2, 9, 20, 22, body);
+  P(2, 19, 20, 12, '#4ea8e4'); P(2, 11, 20, 7, lab);
+  P(4, 12, 6, 5, '#ffffff'); P(14, 12, 6, 5, '#ffffff'); P(6, 14, 2, 2, '#101830'); P(16, 14, 2, 2, '#101830');
+  P(3, 10, 7, 1, '#101830'); P(14, 10, 7, 1, '#101830');
+  if (mood === 'laugh') { P(7, 21, 10, 3, '#0d3a66'); P(8, 21, 8, 1, '#ffffff'); }
+  else { P(8, 22, 8, 1, '#0d3a66'); P(7, 21, 1, 1, '#0d3a66'); P(16, 21, 1, 1, '#0d3a66'); }
+  P(3, 9, 1, 20, 'rgba(255,255,255,.5)');
+}
+
+/* ---------- les boissons ---------- */
+const TYPES = [
+  {name:'classique', col:'#f2c23a'},
+  {name:'tomate', col:'#d8233b'},
+  {name:'perroquet', col:'#2fae4e'},
+  {name:'mauresque', col:'#efe3c8'},
+  {name:'feuille morte', col:'#9a5a2a'},
+  {name:'rourou', col:'#ff7aa8'}
+];
+const STRAWS = [null, '#e8453c', '#2f8fd6'];
+const sig = d => d.t + '-' + d.ice + '-' + d.straw;
+// verre 12 x 18 unités, (cx, by) = milieu du pied
+function drawDrink(g, cx, by, d, s = 2, empty = false) {
+  const X = Math.round(cx - 6 * s), Y = Math.round(by - 18 * s);
+  const P = (c, r, w, h, col) => { g.fillStyle = col; g.fillRect(X + c * s, Y + r * s, w * s, h * s); };
+  if (!empty) {
+    P(1, 5, 10, 12, TYPES[d.t].col); P(1, 5, 10, 1, 'rgba(255,255,255,.55)');
+    const spots = [[2, 7], [6, 10], [2, 12], [7, 6]];
+    for (let i = 0; i < d.ice; i++) { const [c, r] = spots[i]; P(c, r, 3, 3, 'rgba(255,255,255,.9)'); P(c, r, 3, 1, '#ffffff'); P(c + 2, r + 1, 1, 2, 'rgba(120,170,210,.8)'); }
+  } else { P(1, 15, 10, 2, 'rgba(240,220,140,.35)'); P(4, 13, 2, 1, 'rgba(255,255,255,.4)'); }
+  if (STRAWS[d.straw] && !empty) { P(8, -5, 1, 15, STRAWS[d.straw]); P(9, -6, 3, 1, STRAWS[d.straw]); }
+  P(0, 0, 1, 18, '#d7ecf7'); P(11, 0, 1, 18, '#d7ecf7'); P(0, 17, 12, 1, '#eef8ff'); P(2, 2, 1, 12, 'rgba(255,255,255,.35)');
+}
+
+/* ---------- décor ---------- */
+const bg = (() => {
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+  let seed = 31; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const tones = ['#4a4440', '#57504a', '#655c53', '#6f6558', '#5d554f', '#7a6d5c', '#4f4843'];
+  g.fillStyle = '#211c19'; g.fillRect(0, 0, W, H);
+  for (let y = 0; y < H; y += 9) { let x = -Math.floor(rnd() * 40); while (x < W) { const w = 22 + Math.floor(rnd() * 48); g.fillStyle = tones[Math.floor(rnd() * tones.length)]; g.fillRect(x, y, w - 2, 7); x += w; } }
+  const lg = g.createRadialGradient(W / 2, 300, 40, W / 2, 300, 420); lg.addColorStop(0, 'rgba(255,190,90,.12)'); lg.addColorStop(1, 'rgba(0,0,0,.65)');
+  g.fillStyle = lg; g.fillRect(0, 0, W, H);
+  // étagère du bar avec les bouteilles de pastis
+  g.fillStyle = '#3a2416'; g.fillRect(24, 160, W - 48, 6); g.fillStyle = '#5a3a22'; g.fillRect(24, 160, W - 48, 2);
+  for (let x = 34, i = 0; x < W - 40; x += 18, i++) {
+    const k = i % 4;
+    if (k === 3) { g.fillStyle = 'rgba(196,231,248,.8)'; g.fillRect(x, 134, 10, 26); g.fillStyle = '#1a8fd6'; g.fillRect(x, 142, 10, 6); g.fillRect(x + 3, 128, 4, 6); continue; }
+    g.fillStyle = '#d99a14'; g.fillRect(x, 136, 10, 24); g.fillRect(x + 3, 128, 4, 8); g.fillStyle = '#1d4fbf'; g.fillRect(x, 144, 10, 7); g.fillStyle = '#ffd23f'; g.fillRect(x + 2, 146, 6, 3); g.fillStyle = '#c0392b'; g.fillRect(x + 3, 126, 4, 3); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(x + 1, 137, 1, 20);
+  }
+  // guirlande
+  for (let x = 0; x < W; x += 4) { const y = 84 + Math.round(Math.sin(x / W * Math.PI) * 10); g.fillStyle = '#1a1614'; g.fillRect(x, y, 4, 1); }
+  for (let i = 1; i < 12; i++) { const x = i * W / 12, y = 86 + Math.round(Math.sin(x / W * Math.PI) * 10); g.fillStyle = ['#ffd23f', '#ff4fa3', '#9fd8ff'][i % 3]; g.fillRect(Math.round(x) - 2, y, 4, 5); }
+  // comptoir de Youky en bas
+  g.fillStyle = '#6b4426'; g.fillRect(0, 566, W, H - 566); g.fillStyle = '#8a5a34'; g.fillRect(0, 566, W, 3);
+  g.fillStyle = '#9aa4b0'; g.fillRect(0, 560, W, 7); g.fillStyle = '#d0d7de'; g.fillRect(0, 560, W, 1);
+  return cv;
+})();
+
+/* ---------- état ---------- */
+const canvas = $('game'), ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = false;
+let mode = 'solo', state = 'title', phase = '', phaseT = 0, level = 1, lives = 3, score = 0, hi = 0, bestLvl = 0, rounds = 0;
+let seats = [], glasses = [], sel = null, victim = -1, isQuibu = false, memoDur = 1, msg = '', sub = '', msgCol = '#ffd23f', marks = [], animTime = 0;
+let players = [], cur = 0, turns = 0, gage = false, serveIdx = 0, bossX = -80, bossMood = 'idle', resultOk = false, parts = [];
+try { hi = parseInt(localStorage.getItem('quibu-hi') || '0', 10) || 0; } catch (e) {}
+try { bestLvl = parseInt(localStorage.getItem('quibu-lvl') || '0', 10) || 0; } catch (e) {}
+function loadJSON(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
+function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function esc(t) { return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'})[c]); }
+
+const TRAY_Y = 594, HERO_GX = 108, HERO_Y = 562;
+function traySlots(n) { const sp = Math.min(44, 286 / Math.max(1, n)); const x0 = 150 + (290 - sp * (n - 1)) / 2; return Array.from({length:n}, (_, i) => x0 + i * sp); }
+function layout() {
+  const cust = seats.slice(1), n = cust.length, rows = n <= 3 ? 1 : 2, perRow = rows === 1 ? n : Math.ceil(n / 2);
+  const ys = rows === 1 ? [318] : [244, 420];
+  cust.forEach((c, i) => {
+    const r = i < perRow ? 0 : 1, k = r ? i - perRow : i, cnt = r ? n - perRow : perRow, gap = W / cnt;
+    c.sc = rows === 1 ? 1.3 : 1; c.x = gap * (k + 0.5); c.y = ys[r]; c.gx = c.x + 22 + 6 * c.sc;
+  });
+  const h = seats[0]; h.x = 46; h.y = HERO_Y; h.gx = HERO_GX;
+}
+function currentLevel() { return mode === 'solo' ? level : 1 + Math.floor(turns / Math.max(1, players.length)); }
+function makeDrinks(count, L) {
+  for (let tries = 0; tries < 200; tries++) {
+    const out = [];
+    if (L <= 2) {
+      const ts = shuffle([1, 2, 3, 4, 5]);
+      out.push({t:0, ice:2, straw:1});
+      for (let i = 1; i < count; i++) out.push({t:ts[(i - 1) % 5], ice:1 + ri(2), straw:1 + ri(2)});
+    } else {
+      const pool = Math.max(3, 8 - L);         // de moins en moins de boissons différentes : il faut regarder glaçons et paille
+      out.push({t:0, ice:ri(4), straw:ri(3)});
+      for (let i = 1; i < count; i++) out.push({t:ri(pool), ice:ri(4), straw:ri(3)});
+    }
+    if (new Set(out.map(sig)).size === out.length) return out;
+  }
+  return Array.from({length:count}, (_, i) => ({t:i % 6, ice:i % 4, straw:i % 3}));
+}
+
+/* ---------- déroulement d'une tournée ---------- */
+function newRound() {
+  const L = currentLevel();
+  const nCust = Math.min(1 + L, 6);
+  const cast = shuffle(CAST.slice()).slice(0, nCust);
+  const drinks = makeDrinks(nCust + 1, L);
+  seats = [{who:'hero', name:'Youky', mood:'smile'}].concat(cast.map(c => ({who:c, name:c.name, mood:'smile'})));
+  seats.forEach((s, i) => { s.drink = drinks[i]; s.glass = null; });
+  layout();
+  const slots = traySlots(seats.length);
+  glasses = seats.map((s, i) => ({id:i, drink:s.drink, x:slots[i], y:TRAY_Y, tx:slots[i], ty:TRAY_Y, seat:-1}));
+  sel = null; marks = []; victim = -1; parts = [];
+  isQuibu = L >= 2 && Math.random() < 0.32;
+  memoDur = Math.max(3, 1.8 + seats.length * 1.25 - (L - 1) * 0.3);
+  phase = 'serve'; phaseT = 0; serveIdx = 0; bossX = -80; bossMood = 'idle';
+  const p = mode === 'multi' ? players[cur] : null;
+  msg = p ? 'À ' + p.name.toUpperCase() + ' DE RETENIR' : 'TOURNÉE ' + L;
+  msgCol = p ? p.col : '#ffd23f';
+  sub = 'Youky sert ' + seats.length + ' verres…';
+  setAct('J\'AI RETENU !', true);
+  SFX.serve(); chips();
+}
+function startMemo() {
+  phase = 'memo'; phaseT = 0;
+  sub = 'Retiens qui boit quoi : boisson, glaçons, paille !';
+  setAct('J\'AI RETENU !', false);
+}
+function endMemo() {
+  setAct('…', true);
+  if (isQuibu) {
+    // la lumière s'éteint et la Grosse Bouteille boit un verre en douce
+    const uniq = seats.map((s, i) => i);
+    victim = uniq[ri(uniq.length)];
+    phase = 'dark'; phaseT = 0; msg = 'LA LUMIÈRE S\'ÉTEINT…'; msgCol = '#9fd8ff'; sub = 'Mais qu\'est-ce que c\'est que ce bruit ?';
+    SFX.dark(); setTimeout(() => SFX.glou(), 600); setTimeout(() => SFX.laugh(), 1300);
+  } else {
+    collect(); phase = 'collect'; phaseT = 0;
+    msg = 'YOUKY RAMASSE TOUT'; sub = 'Il mélange les verres sur son plateau…';
+  }
+}
+function collect(skipVictim) {
+  const order = shuffle(glasses.filter(g => !(skipVictim && g.id === victim)));
+  const slots = traySlots(order.length);
+  order.forEach((g, i) => { g.seat = -1; g.tx = slots[i]; g.ty = TRAY_Y; });
+  if (skipVictim) { const v = glasses.find(g => g.id === victim); v.gone = true; }
+  seats.forEach(s => { s.glass = null; });
+}
+function startAssign() {
+  phase = 'assign'; phaseT = 0; sel = null;
+  msg = 'RENDS À CHACUN SON VERRE'; msgCol = mode === 'multi' ? players[cur].col : '#ffd23f';
+  sub = 'Touche un verre du plateau, puis la personne.';
+  setAct('SERVIR LA TOURNÉE', true);
+}
+function startQuibu() {
+  phase = 'quibu'; phaseT = 0; bossMood = 'laugh';
+  msg = 'QUI A BU MON VERRE ?'; msgCol = '#9fd8ff';
+  sub = 'Il manque un verre sur le plateau : à qui était-il ?';
+  setAct('TOUCHE CELUI QUI N\'A PLUS DE VERRE', true);
+}
+function placeGlass(g, si) {
+  const s = seats[si];
+  if (s.glass !== null) { const old = glasses[s.glass]; old.seat = -1; }
+  if (g.seat >= 0) seats[g.seat].glass = null;
+  g.seat = si; s.glass = g.id; g.tx = s.gx; g.ty = s.y + 2;
+  // ceux qui restent sur le plateau se resserrent
+  const onTray = glasses.filter(x => x.seat < 0 && !x.gone), slots = traySlots(Math.max(1, onTray.length));
+  onTray.forEach((x, i) => { x.tx = slots[i]; x.ty = TRAY_Y; });
+  SFX.put();
+  setAct('SERVIR LA TOURNÉE', glasses.some(x => x.seat < 0 && !x.gone));
+}
+function backToTray(g) {
+  if (g.seat >= 0) seats[g.seat].glass = null;
+  g.seat = -1;
+  const onTray = glasses.filter(x => x.seat < 0 && !x.gone), slots = traySlots(onTray.length);
+  onTray.forEach((x, i) => { x.tx = slots[i]; x.ty = TRAY_Y; });
+  setAct('SERVIR LA TOURNÉE', true);
+}
+function validate() {
+  marks = seats.map((s, i) => s.glass !== null && sig(glasses[s.glass].drink) === sig(s.drink));
+  const ok = marks.every(Boolean), good = marks.filter(Boolean).length;
+  seats.forEach((s, i) => { s.mood = marks[i] ? 'grin' : 'meh'; });
+  finish(ok, ok ? 'PARFAIT, SANTÉ !' : good + ' / ' + seats.length + ' BONS VERRES', ok ? 'Chacun a retrouvé son verre.' : 'Les habitués râlent… voici les bons verres.');
+  if (!ok) setTimeout(() => { if (phase !== 'result') return; glasses.forEach(g => { g.seat = g.id; seats[g.id].glass = g.id; g.tx = seats[g.id].gx; g.ty = seats[g.id].y + 2; }); marks = seats.map(() => true); marks.fix = true; }, 1400);
+}
+function answerQuibu(si) {
+  const ok = si === victim;
+  marks = seats.map((s, i) => i === victim);
+  seats.forEach((s, i) => { s.mood = i === victim ? 'o' : (i === si && !ok ? 'meh' : 'smile'); });
+  const v = seats[victim];
+  finish(ok, ok ? 'BIEN VU !' : 'RATÉ !', (ok ? 'C\'était bien ' : 'C\'était ') + (victim === 0 ? 'le verre de Youky lui-même !' : 'le verre de ' + v.name + '.'));
+}
+function finish(ok, title, text) {
+  phase = 'result'; phaseT = 0; resultOk = ok;
+  const L = currentLevel();
+  msg = title; msgCol = ok ? '#7fcf5a' : '#e8453c'; sub = text;
+  seats[0].mood = ok ? 'grin' : 'o';
+  if (ok) { SFX.good(); for (let i = 0; i < 26; i++) parts.push({x:rand(40, W - 40), y:rand(120, 300), vx:rand(-60, 60), vy:rand(-200, -60), life:1.2, col:['#ffd23f', '#ff4fa3', '#9fd8ff', '#ffffff'][i % 4]}); }
+  else SFX.bad();
+  if (mode === 'solo') {
+    if (ok) { const pts = (isQuibu ? 150 : 100) * L + seats.length * 20; score += pts; sub += ' +' + pts; level++; if (level - 1 > bestLvl) bestLvl = level - 1; }
+    else lives--;
+    if (score > hi) hi = score;
+    try { localStorage.setItem('quibu-hi', String(hi)); localStorage.setItem('quibu-lvl', String(bestLvl)); } catch (e) {}
+    setAct(lives <= 0 ? 'FIN DU SERVICE' : 'TOURNÉE SUIVANTE', false);
+  } else {
+    const p = players[cur];
+    if (ok) p.wins++;
+    else { p.sips++; sub = p.name + (gage ? ' a un gage : ' + GAGES[ri(GAGES.length)] + ' !' : ' boit une gorgée !') + ' ' + text; }
+    setAct('JOUEUR SUIVANT', false);
+  }
+  chips();
+}
+function next() {
+  if (mode === 'solo') {
+    if (lives <= 0) return gameOver();
+    newRound();
+  } else {
+    turns++; cur = (cur + 1) % players.length; newRound();
+  }
+}
+function setAct(label, disabled) { $('act').textContent = label; $('act').disabled = disabled; }
+function chips() {
+  const el = $('chips');
+  if (mode !== 'multi' || !players.length) { el.hidden = true; return; }
+  el.hidden = false; el.innerHTML = '';
+  players.forEach((p, i) => {
+    const c = document.createElement('div'); c.className = 'chip' + (i === cur ? ' now' : ''); c.style.setProperty('--c', p.col);
+    c.innerHTML = `${esc(p.name)} <span>✔${p.wins} ${gage ? '🎭' : '🥃'}${p.sips}</span>`;
+    el.append(c);
+  });
+  if (typeof fit === 'function') fit();
+}
+
+/* ---------- partie ---------- */
+let names = loadJSON('quibu-names', loadJSON('roue-names', ['Robert', 'Jojo', 'Ginette']));
+function renderList() {
+  const el = $('plist'); el.innerHTML = '';
+  names.forEach((n, i) => {
+    const d = document.createElement('div');
+    const inp = document.createElement('input'); inp.value = n; inp.maxLength = 10; inp.style.borderColor = PCOLS[i % 8]; inp.setAttribute('aria-label', 'Prénom joueur ' + (i + 1));
+    inp.addEventListener('input', () => { names[i] = inp.value; });
+    const del = document.createElement('button'); del.type = 'button'; del.textContent = '×'; del.setAttribute('aria-label', 'Retirer ce joueur'); del.disabled = names.length <= 2;
+    del.addEventListener('click', () => { names.splice(i, 1); renderList(); });
+    d.append(inp, del); el.append(d);
+  });
+  $('addp').disabled = names.length >= 8;
+}
+$('addp').addEventListener('click', () => { if (names.length < 8) { names.push('Joueur ' + (names.length + 1)); renderList(); } });
+function setMode(m) {
+  mode = m;
+  $('m-solo').setAttribute('aria-pressed', String(m === 'solo')); $('m-multi').setAttribute('aria-pressed', String(m === 'multi'));
+  $('multiset').hidden = m !== 'multi';
+  $('hint').textContent = m === 'solo' ? 'Solo : 3 erreurs et le comptoir ferme. Chaque tournée ajoute un habitué.' : 'Chacun son tour, on se passe le téléphone. Celui qui se trompe boit (ou fait un gage). Ça devient plus dur à chaque tour de table.';
+  $('start').textContent = m === 'solo' ? 'Ouvrir le comptoir' : 'Lancer la tournée à ' + names.length;
+}
+$('m-solo').addEventListener('click', () => setMode('solo'));
+$('m-multi').addEventListener('click', () => setMode('multi'));
+function start() {
+  initAudio();
+  if (mode === 'multi') {
+    names = names.map((n, i) => (n || '').trim() || 'Joueur ' + (i + 1)); saveJSON('quibu-names', names);
+    players = names.map((n, i) => ({name:n.slice(0, 10), col:PCOLS[i % 8], wins:0, sips:0}));
+    gage = $('gage').checked; cur = ri(players.length); turns = 0;
+    $('endbtn').hidden = false;
+  } else { level = 1; lives = 3; score = 0; players = []; $('endbtn').hidden = true; }
+  state = 'play'; $('overlay').hidden = true; newRound();
+}
+function gameOver() {
+  state = 'over'; SFX.over();
+  $('eyebrow').textContent = 'Le comptoir ferme';
+  $('title').textContent = score >= hi && score > 0 ? 'NOUVEAU RECORD !' : 'FIN DU SERVICE';
+  $('sub').textContent = (level - 1) ? (level - 1) + ' tournée' + (level > 2 ? 's' : '') + ' servie' + (level > 2 ? 's' : '') + ' sans erreur. Youky lève son pastis à ta mémoire !' : 'Les habitués n\'ont pas retrouvé leurs verres… Youky t\'offre une revanche.';
+  $('stats').innerHTML = `<div>SCORE<strong>${score}</strong></div><div>RECORD<strong>${hi}</strong></div><div>TOURNÉES<strong>${level - 1}</strong></div>`;
+  $('stats').hidden = false; $('start').textContent = 'Revanche';
+  renderPalm(); $('overlay').hidden = false; $('overlay').scrollTop = 0; setAct('…', true);
+}
+function endMulti() {
+  if (mode !== 'multi' || !players.length) return;
+  const board = loadJSON('quibu-board', {});
+  players.forEach(p => { const b = board[p.name] || {wins:0, sips:0, nights:0}; b.wins += p.wins; b.sips += p.sips; b.nights++; board[p.name] = b; });
+  saveJSON('quibu-board', board);
+  const ranked = players.slice().sort((a, b) => b.wins - a.wins || a.sips - b.sips);
+  const thirsty = players.slice().sort((a, b) => b.sips - a.sips)[0];
+  $('eyebrow').textContent = 'Fin de la tournée';
+  $('title').textContent = 'MÉMOIRE D\'ÉLÉPHANT : ' + ranked[0].name.toUpperCase();
+  $('sub').textContent = thirsty.sips ? 'Le plus distrait : ' + thirsty.name + ' avec ' + thirsty.sips + (gage ? ' gage' : ' gorgée') + (thirsty.sips > 1 ? 's' : '') + '. Youky trinque à sa santé !' : 'Personne ne s\'est trompé… des mémoires de barman !';
+  $('stats').innerHTML = ranked.map(p => `<div>${esc(p.name.toUpperCase())}<strong>✔${p.wins} · ${p.sips}</strong></div>`).join('');
+  $('stats').hidden = false; $('start').textContent = 'Nouvelle tournée';
+  state = 'over'; players = []; $('endbtn').hidden = true; chips();
+  renderPalm(); $('overlay').hidden = false; $('overlay').scrollTop = 0; setAct('…', true);
+}
+function renderPalm() {
+  const board = loadJSON('quibu-board', {});
+  const rows = Object.entries(board).sort((a, b) => b[1].wins - a[1].wins || a[1].sips - b[1].sips).slice(0, 5);
+  $('palm').innerHTML = '<h2>PALMARÈS DU COMPTOIR</h2>' +
+    (rows.length ? '<ol>' + rows.map(([n, v], i) => `<li><span>${i + 1}. ${esc(n)}</span><span>✔${v.wins} · ${v.sips} bu</span></li>`).join('') + '</ol>' : '<ol><li><span>Aucune tournée à plusieurs</span><span>-</span></li></ol>') +
+    `<div class="recs">Solo : record ${hi || '-'} · plus longue série : ${bestLvl ? bestLvl + ' tournée' + (bestLvl > 1 ? 's' : '') : '-'}</div>`;
+}
+
+/* ---------- boucle ---------- */
+function update(dt) {
+  animTime += dt; phaseT += dt;
+  parts.forEach(p => { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 400 * dt; }); parts = parts.filter(p => p.life > 0);
+  glasses.forEach(g => { const k = Math.min(1, dt * 12); g.x += (g.tx - g.x) * k; g.y += (g.ty - g.y) * k; });
+  if (state !== 'play') return;
+  if (phase === 'serve') {
+    const want = Math.floor(phaseT / 0.22);
+    while (serveIdx < glasses.length && serveIdx <= want) {
+      const g = glasses[serveIdx], s = seats[serveIdx];
+      g.seat = serveIdx; s.glass = g.id; g.tx = s.gx; g.ty = s.y + 2; serveIdx++; SFX.clink();
+    }
+    if (serveIdx >= glasses.length && phaseT > glasses.length * 0.22 + 0.5) startMemo();
+  } else if (phase === 'memo') {
+    const left = memoDur - phaseT;
+    if (left < 3 && Math.floor(left) !== Math.floor(left + dt)) SFX.tick();
+    if (left <= 0) endMemo();
+  } else if (phase === 'collect') {
+    if (phaseT > 0.9) startAssign();
+  } else if (phase === 'dark') {
+    bossX = -80 + (phaseT / 1.8) * (W + 160);
+    if (phaseT > 0.8 && !glasses.some(g => g.gone)) collect(true);
+    if (phaseT > 2.1) startQuibu();
+  }
+}
+function text(t, x, y, col, font, align = 'center', maxW) { ctx.font = font; ctx.textAlign = align; ctx.textBaseline = 'top'; ctx.fillStyle = col; maxW ? ctx.fillText(t, x, y, maxW) : ctx.fillText(t, x, y); }
+function render() {
+  ctx.drawImage(bg, 0, 0);
+  if (seats.length) {
+    // comptoirs des habitués
+    const ys = [...new Set(seats.slice(1).map(s => s.y))];
+    ys.forEach(y => {
+      ctx.fillStyle = '#6b4426'; ctx.fillRect(0, y + 4, W, 26); ctx.fillStyle = '#8a5a34'; ctx.fillRect(0, y + 4, W, 3);
+    });
+    seats.slice(1).forEach((s, i) => {
+      ctx.drawImage(bust(s.who, s.mood), Math.round(s.x - 40 * s.sc), Math.round(s.y - 60 * s.sc), Math.round(52 * s.sc), Math.round(61 * s.sc));
+    });
+    ys.forEach(y => { ctx.fillStyle = '#9aa4b0'; ctx.fillRect(0, y, W, 6); ctx.fillStyle = '#d0d7de'; ctx.fillRect(0, y, W, 1); });
+    seats.slice(1).forEach(s => text(s.name, s.x - 2, s.y + 8, '#f1ebe4', NAME, 'center', 110));
+    // Youky derrière son comptoir, avec son pastis
+    ctx.drawImage(bust('hero', seats[0].mood), 12, HERO_Y - 82, 68, 80);
+    text('YOUKY', 46, HERO_Y + 12, '#f27a1a', SMALL);
+    // plateau
+    ctx.fillStyle = '#8c96a3'; ctx.fillRect(140, TRAY_Y - 2, 300, 6); ctx.fillStyle = '#c3cbd4'; ctx.fillRect(140, TRAY_Y - 4, 300, 3); ctx.fillStyle = '#5a636e'; ctx.fillRect(140, TRAY_Y + 4, 300, 2);
+    // cibles possibles
+    const choosing = (phase === 'assign' && sel) || phase === 'quibu';
+    if (choosing) seats.forEach(s => {
+      const pulse = 0.25 + 0.2 * Math.sin(animTime * 6);
+      ctx.strokeStyle = 'rgba(255,210,63,' + pulse + ')'; ctx.lineWidth = 2;
+      const r = hitRect(s); ctx.strokeRect(r.x0 + 1, r.y0 + 1, r.x1 - r.x0 - 2, r.y1 - r.y0 - 2);
+    });
+    // verres
+    glasses.forEach(g => {
+      if (g.gone) return;
+      const lift = sel === g ? -8 - Math.abs(Math.sin(animTime * 6)) * 4 : 0;
+      if (sel === g) { ctx.fillStyle = 'rgba(255,210,63,.35)'; ctx.fillRect(Math.round(g.x) - 16, Math.round(g.y) - 46 + lift, 32, 50); }
+      drawDrink(ctx, g.x, g.y + lift, g.drink, 2);
+    });
+    // verre vide du malheureux, une fois la réponse donnée
+    if (phase === 'result' && isQuibu && victim >= 0) { const s = seats[victim]; drawDrink(ctx, s.gx, s.y + 2, s.drink, 2, true); }
+    // marques
+    if (phase === 'result') seats.forEach((s, i) => {
+      const ok = marks[i]; const x = (i ? s.x - 14 * s.sc : 46), y = (i ? s.y - 72 * s.sc : HERO_Y - 98);
+      if (isQuibu && i !== victim) return;
+      ctx.fillStyle = ok ? '#7fcf5a' : '#e8453c'; ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fill();
+      text(ok ? '✓' : '✗', x, y - 9, '#1a1200', '18px VT323, monospace');
+    });
+  }
+  // la nuit tombe sur le comptoir
+  if (phase === 'dark') {
+    const k = Math.min(1, phaseT / 0.3) * (phaseT > 1.8 ? Math.max(0, 1 - (phaseT - 1.8) / 0.3) : 1);
+    ctx.fillStyle = 'rgba(5,5,10,' + (0.94 * k) + ')'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalAlpha = 0.85 * k; drawBottle(ctx, bossX, 300, 3, 'laugh'); ctx.restore();
+    if (phaseT > 0.6 && phaseT < 1.6) text('GLOU GLOU GLOU…', W / 2, 250, '#9fd8ff', MID);
+  }
+  if (phase === 'quibu' || (phase === 'result' && isQuibu)) {
+    // la Grosse Bouteille, ravie, dans un coin
+    drawBottle(ctx, W - 54, 110, 1.8, bossMood);
+  }
+  parts.forEach(p => { ctx.fillStyle = p.col; ctx.fillRect(Math.round(p.x), Math.round(p.y), 3, 3); });
+
+  // bandeau du haut
+  ctx.fillStyle = 'rgba(13,11,10,.9)'; ctx.fillRect(0, 0, W, 78);
+  ctx.fillStyle = msgCol; ctx.fillRect(0, 76, W, 2);
+  if (state === 'play') {
+    if (mode === 'solo') {
+      text('TOURNÉE ' + level + '  ·  SCORE ' + score, 10, 8, '#9d948b', SMALL, 'left');
+      for (let i = 0; i < 3; i++) { const x = W - 22 - i * 16; ctx.fillStyle = i < lives ? '#f2c23a' : '#3a302a'; ctx.fillRect(x + 1, 9, 8, 9); ctx.fillStyle = '#d7ecf7'; ctx.fillRect(x, 6, 1, 13); ctx.fillRect(x + 9, 6, 1, 13); ctx.fillRect(x, 18, 10, 1); }
+    } else {
+      const p = players[cur];
+      text('AU TOUR DE ' + p.name.toUpperCase(), 10, 8, p.col, SMALL, 'left', 280);
+      text('TOUR ' + currentLevel(), W - 10, 8, '#9d948b', SMALL, 'right');
+    }
+  }
+  text(msg, W / 2, 26, msgCol, msg.length > 26 ? SMALL : MID, 'center', W - 20);
+  text(sub, W / 2, 46, '#f1ebe4', TXT, 'center', W - 20);
+  if (phase === 'memo') {
+    const k = clamp(1 - phaseT / memoDur, 0, 1);
+    ctx.fillStyle = '#3a302a'; ctx.fillRect(0, 72, W, 4); ctx.fillStyle = k < 0.3 ? '#e8453c' : '#ffd23f'; ctx.fillRect(0, 72, Math.round(W * k), 4);
+  }
+}
+let last = performance.now();
+function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; update(dt); render(); requestAnimationFrame(frame); }
+
+/* ---------- commandes ---------- */
+function hitRect(s) {
+  if (s.who === 'hero') return {x0:6, y0:HERO_Y - 96, x1:132, y1:H};
+  return {x0:s.x - 44 * s.sc - 12, y0:s.y - 64 * s.sc - 18, x1:s.x + 52, y1:s.y + 28};
+}
+function toCanvas(e) { const r = canvas.getBoundingClientRect(); return {x:(e.clientX - r.left) / r.width * W, y:(e.clientY - r.top) / r.height * H}; }
+canvas.addEventListener('pointerdown', e => {
+  if (!$('overlay').hidden || state !== 'play') return;
+  e.preventDefault(); initAudio();
+  const p = toCanvas(e);
+  if (phase === 'memo' || phase === 'serve') return;
+  if (phase === 'assign') {
+    // un verre (sur le plateau ou déjà servi) ?
+    const g = glasses.slice().reverse().find(g => !g.gone && Math.abs(p.x - g.x) < 18 && p.y > g.y - 48 && p.y < g.y + 6);
+    if (g) {
+      if (sel === g) { sel = null; return; }
+      if (sel && g.seat >= 0) { const si = g.seat; placeGlass(sel, si); sel = null; return; }
+      if (g.seat >= 0) backToTray(g);
+      sel = g; SFX.pick(); return;
+    }
+    const si = seats.findIndex(s => { const r = hitRect(s); return p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1; });
+    if (si >= 0 && sel) { placeGlass(sel, si); sel = null; }
+    return;
+  }
+  if (phase === 'quibu') {
+    const si = seats.findIndex(s => { const r = hitRect(s); return p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1; });
+    if (si >= 0) answerQuibu(si);
+  }
+});
+$('act').addEventListener('click', () => {
+  initAudio();
+  if (state !== 'play') return;
+  if (phase === 'memo') endMemo();
+  else if (phase === 'assign') { if (!glasses.some(g => g.seat < 0 && !g.gone)) validate(); }
+  else if (phase === 'result') next();
+});
+$('start').addEventListener('click', start);
+$('endbtn').addEventListener('click', endMulti);
+$('mute').addEventListener('click', () => {
+  initAudio(); muted = !muted; if (master) master.gain.value = muted ? 0 : 0.5;
+  try { localStorage.setItem('pastisman-muted', muted ? '1' : '0'); } catch (e) {}
+  syncMute();
+});
+function syncMute() { $('mute').textContent = muted ? '♪ MUET' : '♪ SON'; $('mute').setAttribute('aria-pressed', String(muted)); }
+window.addEventListener('keydown', e => {
+  if (!$('overlay').hidden) { if (e.key === 'Enter' && e.target.tagName !== 'INPUT') { e.preventDefault(); start(); } return; }
+  if ((e.code === 'Space' || e.key === 'Enter') && !$('act').disabled) { e.preventDefault(); $('act').click(); }
+  else if (e.key.toLowerCase() === 'm') $('mute').click();
+});
+function fit() { mkFit(canvas, W, H); }
+window.addEventListener('resize', fit);
+window.addEventListener('orientationchange', () => setTimeout(fit, 250));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
+window.addEventListener('load', fit);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+
+
+// écran d'accueil : une tournée déjà servie
+$('c-hero').getContext('2d').drawImage(bust('hero', 'grin'), 0, 0);
+{ const g = $('c-boss').getContext('2d'); drawBottle(g, 0, -2, 0.95, 'laugh'); }
+seats = [{who:'hero', name:'Youky', mood:'grin'}].concat(CAST.slice(0, 3).map(c => ({who:c, name:c.name, mood:'smile'})));
+const demo = [{t:0, ice:2, straw:1}, {t:1, ice:1, straw:2}, {t:2, ice:3, straw:0}, {t:3, ice:1, straw:1}];
+seats.forEach((s, i) => { s.drink = demo[i]; }); layout();
+glasses = seats.map((s, i) => ({id:i, drink:s.drink, x:s.gx, y:s.y + 2, tx:s.gx, ty:s.y + 2, seat:i}));
+msg = 'QUI A BU MON VERRE ?'; sub = 'Retiens bien qui boit quoi…';
+renderList(); setMode('solo'); renderPalm(); syncMute(); fit(); requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
